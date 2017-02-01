@@ -80,7 +80,12 @@
       data: boards.cards,
       columns: [
         {data: "name"},
-        {data: "idMembers[, ]"},
+        {
+          data: "idMembers.0",
+          render: function(data, type, row, meta){
+            return members[data];
+          }
+        },
         {data: "idList"},
         {data: "idLabels[, ]"},
         {data: "dateLastActivity"}

@@ -15,14 +15,41 @@
       </form>
 
       <div id="labels"></div>
+
+      <table id="trellocards" class="display">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Assignee</th>
+            <th>Status</th>
+            <th>Labels</th>
+            <th>Last Activity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+
     </div> 
   </body>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js" type="text/javascript"></script>
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
   <script src="https://api.trello.com/1/client.js?key=a1b28e56ba97fb73bb402198946ebf35"></script>
+
+  <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.13/css/jquery.dataTables.css">
+  <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.13/js/jquery.dataTables.js"></script>  
   
   <script type="text/javascript">
+    $(document).ready( function () {
+
     var loadedBoards = function(boards) {
       $.each(boards, function(index, value) {
         $('#boards')
@@ -31,6 +58,7 @@
           .text(value.name)); 
       });
     };
+
     var loadBoards = function() {
       //Get the users boards
       Trello.get(
@@ -46,13 +74,27 @@
         $('#labels').append(label)
       });
     };
+
+    var loadedCards = function(boards) {
+    $('#table_id').DataTable(
+      data: boards.cards,
+      columns: [
+        {data: "name"},
+        {data: "members[idMembers.0].fullName"},
+        {data: "lists[idStatus].name"},
+        {data: "idLabels[, ]"},
+        {data: "dateLastActivity"}
+      ]
+    );
+    };
+
     $('#boards').change(function() {
       var boardId = $("option:selected", this).val();
-      $('#labels').empty();
+      // $('#labels').empty();
       
       Trello.get(
-        '/boards/' + boardId + '/labels',
-        loadedLabels,
+        '/boards/' + boardId + '?cards=all&members=all&lists=all',
+        loadedCards,
         function() { console.log("Failed to load labels"); }
       );
     });
@@ -67,5 +109,8 @@
       success: loadBoards,
       error: function() { console.log("Failed authentication"); }
     });
+      
+    });
+
   </script>
 </html>

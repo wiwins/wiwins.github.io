@@ -76,7 +76,7 @@
     };
 
     var loadedCards = function(boards) {
-    $('#trellocards').DataTable(
+    $('#trellocards').DataTable({
       data: boards.cards,
       columns: [
         {data: "name"},
@@ -85,7 +85,8 @@
         {data: "idLabels[, ]"},
         {data: "dateLastActivity"}
       ]
-    );
+
+    });
     };
 
     $('#boards').change(function() {

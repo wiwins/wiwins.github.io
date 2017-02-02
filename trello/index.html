@@ -1,0 +1,141 @@
+<html>
+  <head>
+    <title>A Trello Dashboard</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  </head>
+  <body>
+    <div class="container">
+      <h1>Trello Dashboard</h1>
+
+      <form class="form-horizontal" id="boards_form">
+        <div class="form-group">
+          <label class="control-label">Choose your board</label>
+            <select class="form-control" id="boards"></select>
+        </div>
+      </form>
+
+      <div id="labels"></div>
+
+      <table id="trellocards" class="display">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Assignee</th>
+            <th>Status</th>
+            <th>Labels</th>
+            <th>Last Activity</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div> 
+  </body>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js" type="text/javascript"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+  <script src="https://api.trello.com/1/client.js?key=a1b28e56ba97fb73bb402198946ebf35"></script>
+  <script src="https://cdn.jsdelivr.net/lodash/4.17.4/lodash.core.min.js"></script>
+  
+  <script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.17.1/moment.min.js"></script>  
+  <!--script type="text/javascript" charset="utf8" src="https://cdnjs.cloudflare.com/ajax/libs/moment-timezone/0.5.11/moment-timezone-with-data.min.js"></script -->  
+
+  <link rel="stylesheet" type="text/css" href="//cdn.datatables.net/1.10.13/css/jquery.dataTables.css">
+  <script type="text/javascript" charset="utf8" src="//cdn.datatables.net/1.10.13/js/jquery.dataTables.js"></script> 
+  <!-- script type="text/javascript" charset="utf8" src="//cdn.datatables.net/plug-ins/1.10.13/dataRender/datetime.js"></script -->  
+  
+  <script type="text/javascript">
+    
+    $(document).ready( function () {
+    
+    $('#trellocards').DataTable();
+
+    var boardData;
+
+    var loadedBoards = function(boards) {
+      $.each(boards, function(index, value) {
+        $('#boards')
+          .append($("<option></option>")
+          .attr("value",value.id)
+          .text(value.name)); 
+      });
+    };
+
+    var loadBoards = function() {
+      //Get the users boards
+      Trello.get(
+        '/members/me/boards/',
+        loadedBoards,
+        function() { console.log("Failed to load boards"); }
+      );
+    };
+
+    var loadedLabels = function(labels) {
+      $.each(labels, function(index, label) {
+        var label = $("<p><span class='badge' style='background:" + label.color + ";'>" + label.uses + "</span> " + label.name + "</p>");
+        $('#labels').append(label)
+      });
+    };
+
+    var modifyCards = function(card){
+      card.idMembers = _.map(card.idMembers, function(idMember){
+        let member = _.find(boardData.members, {"id": idMember});
+        return member? member.fullName : "";
+      });
+
+      let list = _.find(boardData.lists, {"id": card.idList});
+      card.idList = list? list.name : "";
+      
+      return card;
+    }
+
+    var loadedCards = function(board) {
+      boardData = board;
+      var cards = _.map(boardData.cards, modifyCards);
+      $('#trellocards').dataTable().fnDestroy();
+      // $('#trellocards').empty();
+      $('#trellocards').DataTable({
+        data: cards,
+        columns: [
+          {data: "name", width:"30%"},
+          {data: "idMembers[, ]"},
+          {data: "idList"},
+          {data: "labels[, ].name"},
+          {data: "dateLastActivity", render:function ( data, type, full, meta ){ return moment(data).format('DD.MM.YYYY HH:mm:ss')}}
+        ]
+      });
+    };
+
+    $('#boards').change(function() {
+      var boardId = $("option:selected", this).val();
+      
+      Trello.get(
+        '/boards/' + boardId + '?cards=all&members=all&lists=all',
+        loadedCards,
+        function() { console.log("Failed to load labels"); }
+      );
+    });
+
+    Trello.authorize({
+      type: "popup",
+      name: "Trello dashboard",
+      scope: {
+        read: true,
+        write: false },
+      expiration: "never",
+      success: loadBoards,
+      error: function() { console.log("Failed authentication"); }
+    });
+      
+    });
+
+  </script>
+</html>
